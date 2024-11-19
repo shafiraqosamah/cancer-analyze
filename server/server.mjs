@@ -11,7 +11,14 @@ export async function startServer(
     store,
 ) {
     const server = hapi.server({
-        port: '8080'
+        port: '8080',
+        routes: {
+            cors: {
+              origin: ['*'], // Allow all origins
+              credentials: true, // Allow cookies and authorization headers
+              additionalHeaders: ['X-Custom-Header'], // Add any custom headers
+            },
+          },
     })
 
     server.route({
