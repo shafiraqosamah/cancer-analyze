@@ -13,6 +13,8 @@ RUN npm install --production
 # Copy the rest of the application files into the working directory
 COPY . .
 
+RUN mkdir tmp
+
 # Expose the desired port (if applicable, e.g., 3000)
 EXPOSE 8080
 
