@@ -11,7 +11,7 @@ export const Store = {
     data_store: [],
     save: async function(data) {
         this.data_store.push(data)
-        await firestore.collection("predictions").add(data)
+        await firestore.collection("predictions").doc(data.id).set(data)
     },
     findAll: async function() {
         const snapshots = await firestore.collection("predictions").get()
