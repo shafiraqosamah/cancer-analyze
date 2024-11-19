@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 8080
 
 # Specify the entry point to run main.js
-ENTRYPOINT ["node", "main.js"]
+ENTRYPOINT ["node", "main.mjs"]
