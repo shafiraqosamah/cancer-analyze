@@ -2,6 +2,8 @@ import hapi from '@hapi/hapi'
 import { predict } from '../predict.mjs'
 import { randomUUID } from "crypto";
 import {Store} from "./store.mjs"
+import fs from 'node:fs'
+import path from 'path'
 
 /**
  * 
@@ -36,11 +38,18 @@ export async function startServer(
             payload: {
                 multipart: true,
                 maxBytes: 1_000_000, // 1MB,
+                output: 'stream',
             },
         },
         handler: async function(request, h) {
             try {
-                const score = await predict(request.payload.image)
+                const { image } = request.payload;
+                if (!image || !image.hapi.filename) {
+                    return h.response({ message: 'No file uploaded' }).code(400);
+                }
+
+                const imageBuf = await streamToUint8Array(image)
+                const score = await predict(imageBuf)
                 const prediction = createPrediction(score)
                 await store.save(prediction)
     
@@ -50,6 +59,7 @@ export async function startServer(
                     data: prediction,
                 }).code(201);
             } catch (err) {
+                console.log("error: ", err)
                 return h.response({
                     status: "fail", 
                     message: "Terjadi kesalahan dalam melakukan prediksi"
@@ -113,4 +123,27 @@ function createPrediction(score = 0) {
         createdAt,
     };
 
+}
+
+async function streamToUint8Array(stream) {
+    const tempFilePath = path.join('tmp', 'uploaded_image.jpg')
+    await storeFileToTemp(stream, tempFilePath)
+
+    return new Promise((resolve, reject) => {
+        fs.readFile(tempFilePath,  (err, data) => {
+            if (err) reject(err);
+            resolve(new Uint8Array(data))
+        })
+    })
+}
+
+async function storeFileToTemp(stream, tempFilePath = '') {
+    return new Promise((resolve, reject) => {
+        const writeStream = fs.createWriteStream(tempFilePath);
+
+        stream.pipe(writeStream);
+        writeStream.on('finish', () => {
+            return resolve()
+        });
+    });
 }
